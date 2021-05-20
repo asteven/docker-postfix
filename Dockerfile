@@ -1,4 +1,4 @@
-FROM alpine:3
+FROM docker.io/alpine:3
 
 LABEL maintainer "Steven Armstrong <steven.armstrong@id.ethz.ch>"
 
