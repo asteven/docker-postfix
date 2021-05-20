@@ -2,7 +2,7 @@ REGISTRY = docker.io
 IMG_NAMESPACE = asteven
 IMG_NAME = postfix
 IMG_FQNAME = $(REGISTRY)/$(IMG_NAMESPACE)/$(IMG_NAME)
-IMG_VERSION = 0.1.5
+IMG_VERSION = 0.1.6
 # Prefere podman over docker for building.
 BUILDER = $(shell which podman || which docker)
 
@@ -11,7 +11,7 @@ all: container
 
 container:
 	# Build the runtime stage
-	sudo $(BUILDER) build \
+	sudo $(BUILDER) build --pull \
 		--tag $(IMG_FQNAME):$(IMG_VERSION) \
 		--tag $(IMG_FQNAME):latest .
 
