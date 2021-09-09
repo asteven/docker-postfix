@@ -5,6 +5,7 @@ Postfix running in the foreground inside a docker container.
 Configured via files mounted at:
 
 /config/master with changes for settings usually configured in master.cf.
+
 /config/main with changes for settings usually configured in main.cf.
 
 Each line in /config/master that starts with '-' is passed to `postconf`
