@@ -33,8 +33,16 @@ if [ -f /config/main ]; then
       [ "${line:0:4}" = "#EOF" ] && break
       # nuke leading and trailing whitespace
       config="$(echo $line)"
-      echo "postconf $config"
-      postconf "$config"
+      case "$config" in
+         "-X*")
+            echo "postconf -X $config"
+            postconf -X $config
+         ;;
+         *)
+            echo "postconf $config"
+            postconf "$config"
+         ;;
+      esac
    done < /config/main
 fi
 
