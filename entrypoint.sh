@@ -12,7 +12,7 @@ if [ -f /config/master ]; then
       config="$(echo $line)"
       case "$config" in
          "-*")
-            # Support any of the master.cf related options like -M, -F, -P
+            # Support any of the master.cf related options like -M, -F, -P, -MX, -PX
             echo "postconf $config"
             postconf $config
          ;;
@@ -38,12 +38,43 @@ if [ -f /config/main ]; then
    done < /config/main
 fi
 
-# Environment variables override configuration from /config/main.
+# Environment variables override configuration from /config/master and /config/main.
 # POSTFIX_{name}={value} -> postconf {name}={value}
 env | grep ^POSTFIX_ | sed 's/^POSTFIX_//' \
 | while read -r config; do
    echo "postconf $config"
    postconf "$config"
+done
+
+# Environment variables override configuration from /config/master and /config/main.
+#
+# POSTCONF_{param}_{name}={value} -> postconf -{param} {name}={value}
+# where param is one of the postfix master.cf supported service fields: M|F|P|MX|PX
+# / (slash) has to be escaped with __ (double underscore).
+#
+# e.g.:
+#   export POSTCONF_M_submission__inet="submission inet n - y - - smtpd"
+#   -> postconf -M submission/inet="submission inet n - y - - smtpd"
+#   export POSTCONF_F_submission__inet__chroot=n
+#   -> postconf -F submission/inet/chroot=n
+#   export POSTCONF_P_submission__inet__smtpd_upstream_proxy_protocol=haproxy
+#   -> postconf -P submission/inet/smtpd_upstream_proxy_protocol=haproxy
+#   export export POSTCONF_MX_submission__inet=
+#   -> postconf -MX submission/inet
+env | grep ^POSTCONF_ | sed 's|^POSTCONF_||' \
+| while read -r config; do
+   case "$config" in
+      M_*|F_*|P_*|MX_*|PX_*)
+         param="${config%%_*}"
+         config="${config#*_}"
+      ;;
+   esac
+   # replace __ with /
+   key="$(echo "${config%=*}" | sed 's|__|/|g')"
+   value="${config#*=}"
+   [ -n "$value" ] && entry="$key=$value" || entry="$key"
+   echo "postconf -${param} $entry"
+   postconf -${param} "$entry"
 done
 
 
