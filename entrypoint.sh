@@ -38,6 +38,16 @@ if [ -f /config/main ]; then
    done < /config/main
 fi
 
+# Create postmap tables in /etc/postfix/{name}
+if [ -d /config/tables ]; then
+   for name in $(ls -1 /config/tables); do
+      file="/etc/postfix/$name"
+      cp "/config/tables/$name" "$file"
+      echo "postmap $file"
+      postmap "$file"
+   done
+fi
+
 # Environment variables override configuration from /config/master and /config/main.
 # POSTFIX_{name}={value} -> postconf {name}={value}
 env | grep ^POSTFIX_ | sed 's/^POSTFIX_//' \
@@ -48,11 +58,17 @@ done
 
 # Environment variables override configuration from /config/master and /config/main.
 #
+# POSTCONF_{name}={value} -> postconf {name}={value}
+#
 # POSTCONF_{param}_{name}={value} -> postconf -{param} {name}={value}
-# where param is one of the postfix master.cf supported service fields: M|F|P|MX|PX
+# where param is one of the postconf supported params: X|M|F|P|MX|PX
 # / (slash) has to be escaped with __ (double underscore).
 #
 # e.g.:
+#   export POSTCONF_mydestination='$myhostname, localhost.$mydomain, localhost'
+#   -> postconf mydestination='$myhostname, localhost.$mydomain, localhost'
+#   export POSTCONF_X_mydestination=
+#   -> postconf -X mydestination
 #   export POSTCONF_M_submission__inet="submission inet n - y - - smtpd"
 #   -> postconf -M submission/inet="submission inet n - y - - smtpd"
 #   export POSTCONF_F_submission__inet__chroot=n
@@ -63,8 +79,9 @@ done
 #   -> postconf -MX submission/inet
 env | grep ^POSTCONF_ | sed 's|^POSTCONF_||' \
 | while read -r config; do
+   param=
    case "$config" in
-      M_*|F_*|P_*|MX_*|PX_*)
+      X_*|M_*|F_*|P_*|MX_*|PX_*)
          param="${config%%_*}"
          config="${config#*_}"
       ;;
@@ -73,8 +90,26 @@ env | grep ^POSTCONF_ | sed 's|^POSTCONF_||' \
    key="$(echo "${config%=*}" | sed 's|__|/|g')"
    value="${config#*=}"
    [ -n "$value" ] && entry="$key=$value" || entry="$key"
-   echo "postconf -${param} $entry"
-   postconf -${param} "$entry"
+   [ -n "$param" ] && {
+      echo "postconf -${param} $entry"
+      postconf -${param} "$entry"
+   } || {
+      echo "postconf $entry"
+      postconf "$entry"
+   }
+done
+
+
+# Environment variables override configuration from /config/tables
+# POSTMAP_{name}="{value}" -> echo "{value} > /etc/postfix/{name} && postmap /etc/postfix/{name}
+env | grep ^POSTMAP_ | sed 's/^POSTMAP_//' \
+| while read -r config; do
+   key="${config%=*}"
+   value="${config#*=}"
+   file="/etc/postfix/$key"
+   echo "$value" > "$file"
+   echo "postmap $file"
+   postmap "$file"
 done
 
 
