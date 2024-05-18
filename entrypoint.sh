@@ -1,6 +1,9 @@
 #!/bin/sh
 
-#set -x
+if [ "${DEBUG-}" ]; then
+   set -x
+fi
+
 
 # Apply configuration to /etc/postfix/master.cfg.
 if [ -f /config/master ]; then
@@ -25,6 +28,7 @@ if [ -f /config/master ]; then
    done < /config/master
 fi
 
+
 # Apply configuration to /etc/postfix/main.cfg.
 if [ -f /config/main ]; then
    while read -r line; do
@@ -33,18 +37,11 @@ if [ -f /config/main ]; then
       [ "${line:0:4}" = "#EOF" ] && break
       # nuke leading and trailing whitespace
       config="$(echo $line)"
-      case "$config" in
-         "-X*")
-            echo "postconf -X $config"
-            postconf -X $config
-         ;;
-         *)
-            echo "postconf $config"
-            postconf "$config"
-         ;;
-      esac
+      echo "postconf $config"
+      postconf $config
    done < /config/main
 fi
+
 
 # Create postmap tables in /etc/postfix/{name}
 if [ -d /config/tables ]; then
@@ -56,35 +53,9 @@ if [ -d /config/tables ]; then
    done
 fi
 
-# Environment variables override configuration from /config/master and /config/main.
-# POSTFIX_{name}={value} -> postconf {name}={value}
-env | grep ^POSTFIX_ | sed 's/^POSTFIX_//' \
-| while read -r config; do
-   echo "postconf $config"
-   postconf "$config"
-done
 
 # Environment variables override configuration from /config/master and /config/main.
-#
-# POSTCONF_{name}={value} -> postconf {name}={value}
-#
-# POSTCONF_{param}_{name}={value} -> postconf -{param} {name}={value}
-# where param is one of the postconf supported params: X|M|F|P|MX|PX
-# / (slash) has to be escaped with __ (double underscore).
-#
-# e.g.:
-#   export POSTCONF_mydestination='$myhostname, localhost.$mydomain, localhost'
-#   -> postconf mydestination='$myhostname, localhost.$mydomain, localhost'
-#   export POSTCONF_X_mydestination=
-#   -> postconf -X mydestination
-#   export POSTCONF_M_submission__inet="submission inet n - y - - smtpd"
-#   -> postconf -M submission/inet="submission inet n - y - - smtpd"
-#   export POSTCONF_F_submission__inet__chroot=n
-#   -> postconf -F submission/inet/chroot=n
-#   export POSTCONF_P_submission__inet__smtpd_upstream_proxy_protocol=haproxy
-#   -> postconf -P submission/inet/smtpd_upstream_proxy_protocol=haproxy
-#   export export POSTCONF_MX_submission__inet=
-#   -> postconf -MX submission/inet
+# See ./README.md for more information how this works.
 env | grep ^POSTCONF_ | sed 's|^POSTCONF_||' \
 | while read -r config; do
    param=
@@ -109,12 +80,13 @@ done
 
 
 # Environment variables override configuration from /config/tables
-# POSTMAP_{name}="{value}" -> echo "{value} > /etc/postfix/{name} && postmap /etc/postfix/{name}
+# See ./README.md for more information how this works.
 env | grep ^POSTMAP_ | sed 's/^POSTMAP_//' \
 | while read -r config; do
    key="${config%=*}"
-   value="${config#*=}"
    file="/etc/postfix/$key"
+   name='$'"POSTMAP_$key"
+   eval value=$name
    echo "$value" > "$file"
    echo "postmap $file"
    postmap "$file"
@@ -124,9 +96,10 @@ done
 # Log to stdout.
 postconf "maillog_file=/dev/stdout"
 
-# Unclean container stop might leave pid files around.
+# Ensure there's now stray pid file.
 rm -f /var/spool/postfix/pid/master.pid
 
+# TODO: do this in dockerfile instead so container can it can possibly run rootless.
 # Ensure we can write our stuff.
 chown postfix:root /var/lib/postfix
 chown -R postfix: /var/lib/postfix/*
