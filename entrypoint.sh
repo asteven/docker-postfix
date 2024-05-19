@@ -99,7 +99,7 @@ postconf "maillog_file=/dev/stdout"
 # Ensure there's now stray pid file.
 rm -f /var/spool/postfix/pid/master.pid
 
-# TODO: do this in dockerfile instead so container can it can possibly run rootless.
+# TODO: do this in dockerfile instead so the container can potentially run rootless.
 # Ensure we can write our stuff.
 chown postfix:root /var/lib/postfix
 chown -R postfix: /var/lib/postfix/*
