@@ -9,7 +9,8 @@ RUN echo '@edge http://dl-cdn.alpinelinux.org/alpine/edge/main' >> /etc/apk/repo
 RUN apk --no-cache add --upgrade apk-tools@edge; \
     apk --no-cache update; \
     apk --no-cache add tini \
-    postfix openssl
+    postfix openssl \
+    postfix-pcre
 
 # Tini is now available at /sbin/tini
 ENTRYPOINT ["/sbin/tini", "--"]
