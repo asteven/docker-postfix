@@ -5,7 +5,7 @@ if [ "${DEBUG-}" ]; then
 fi
 
 
-# Apply configuration to /etc/postfix/master.cfg.
+# Apply configuration to /etc/postfix/master.cf.
 if [ -f /config/master ]; then
    while read -r line; do
       [ -z "$line" ] && continue
@@ -29,7 +29,7 @@ if [ -f /config/master ]; then
 fi
 
 
-# Apply configuration to /etc/postfix/main.cfg.
+# Apply configuration to /etc/postfix/main.cf.
 if [ -f /config/main ]; then
    while read -r line; do
       [ -z "$line" ] && continue
@@ -40,17 +40,6 @@ if [ -f /config/main ]; then
       echo "postconf $config"
       postconf $config
    done < /config/main
-fi
-
-
-# Create postmap tables in /etc/postfix/{name}
-if [ -d /config/tables ]; then
-   for name in $(ls -1 /config/tables); do
-      file="/etc/postfix/$name"
-      cp "/config/tables/$name" "$file"
-      echo "postmap $file"
-      postmap "$file"
-   done
 fi
 
 
@@ -79,6 +68,19 @@ env | grep ^POSTCONF_ | sed 's|^POSTCONF_||' \
 done
 
 
+# Create postmap tables in /etc/postfix/{name}
+if [ -d /config/tables ]; then
+   for name in $(ls -1 /config/tables); do
+      file="/etc/postfix/$name"
+      cp "/config/tables/$name" "$file"
+      var_name="$(grep -v '^#' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
+      map="$(postconf -h $var_name)"
+      echo "postmap $map"
+      postmap "$map" || true
+   done
+fi
+
+
 # Environment variables override configuration from /config/tables
 # See ./README.md for more information how this works.
 env | grep ^POSTMAP_ | sed 's/^POSTMAP_//' \
@@ -88,8 +90,10 @@ env | grep ^POSTMAP_ | sed 's/^POSTMAP_//' \
    name='$'"POSTMAP_$key"
    eval value=$name
    echo "$value" > "$file"
-   echo "postmap $file"
-   postmap "$file"
+   var_name="$(grep -v '^#' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
+   map="$(postconf -h $var_name)"
+   echo "postmap $map"
+   postmap "$map" || true
 done
 
 
