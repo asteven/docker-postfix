@@ -1,8 +1,10 @@
-REGISTRY = docker.io
-IMG_NAMESPACE = asteven
+#REGISTRY = docker.io
+#IMG_NAMESPACE = asteven
+REGISTRY = registry.core.hpc.ethz.ch
+IMG_NAMESPACE = ethz-hpc
 IMG_NAME = postfix
 IMG_FQNAME = $(REGISTRY)/$(IMG_NAMESPACE)/$(IMG_NAME)
-IMG_VERSION = 0.1.7
+IMG_VERSION = 0.2.3
 # Prefere podman over docker for building.
 BUILDER = $(shell which podman || which docker)
 
