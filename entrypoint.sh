@@ -16,8 +16,9 @@ if [ -f /config/master ]; then
       case "$config" in
          "-*")
             # Support any of the master.cf related options like -M, -F, -P, -MX, -PX
-            echo "postconf $config"
-            postconf $config
+            option="${config%% *}"
+            echo "postconf $option \"$config\""
+            postconf $option "$config"
          ;;
          *)
             # Default to -M
@@ -38,7 +39,7 @@ if [ -f /config/main ]; then
       # nuke leading and trailing whitespace
       config="$(echo $line)"
       echo "postconf $config"
-      postconf $config
+      postconf "$config"
    done < /config/main
 fi
 
