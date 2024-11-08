@@ -13,9 +13,9 @@ You have to understand postfix to make use of all this.
 
 Therefore refer to the postfix documentation for possible configuration settings:
 
-http://www.postfix.org/postconf.5.html
-http://www.postfix.org/wip.html#master
-http://www.postfix.org/DATABASE_README.html
+- http://www.postfix.org/postconf.5.html
+- http://www.postfix.org/wip.html#master
+- http://www.postfix.org/DATABASE_README.html
 
 
 
@@ -30,7 +30,7 @@ The container considers config files and variables in /config:
 Each line in /config/master that starts with '-' is passed to `postconf`
 verbatim. All other lines are passed to `postconf -M`.
 
-Eeach line in /config/main is passed to `postconf` verbatim.
+Each line in /config/main is passed to `postconf` verbatim.
 
 Each file in /config/tables/ becomes a postmap file at /etc/postfix/{filename}
 
@@ -49,7 +49,8 @@ POSTCONF_{param}_{name}={value} -> postconf -{param} {name}={value}
 ```
 
 where param is one of the postconf supported params: X|M|F|P|MX|PX
-/ (slash) in variable names has to be escaped with __ (double underscore).
+
+Note: / (slash) in variable names has to be escaped with __ (double underscore).
 
 e.g.:
 ```
@@ -71,13 +72,13 @@ Additionally any environment variable prefixed with POSTMAP_ defines a postfix
 lookup table in /etc/postfix.
 
 ```
-POSTMAP_{filename}={value} -> /etc/postfix/{filename} conaining {value}
+POSTMAP_{filename}={value} -> /etc/postfix/{filename} containing {value}
 ```
 
 e.g.:
 ```
-  POSTMAP_smtpd_recipient_restrictions="euler.ethz.ch DISCARD"
-  -> echo "euler.ethz.ch DISCARD" > /etc/postfix/smtpd_recipient_restrictions
+  POSTMAP_smtpd_recipient_restrictions="blackhole.example.com DISCARD"
+  -> echo "blackhole.example.com DISCARD" > /etc/postfix/smtpd_recipient_restrictions
      postmap /etc/postfix/smtpd_recipient_restrictions
 ```
 
