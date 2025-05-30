@@ -69,15 +69,30 @@ env | grep ^POSTCONF_ | sed 's|^POSTCONF_||' \
 done
 
 
+find_map() {
+   _file="$1"
+   grep -v -E '^#|^$' /etc/postfix/main.cf \
+      | grep "$_file" \
+      | cut -d '=' -f 2 \
+      | tr ' ,' '\n' \
+      | grep "$_file"
+}
+
+postmap_file() {
+   _file="$1"
+   _map="$(find_map "$_file")"
+   if [ -n "$_map" ]; then
+      echo "postmap $_map"
+      postmap "$_map" || true
+   fi
+}
+
 # Create postmap tables in /etc/postfix/{name}
 if [ -d /config/tables ]; then
    for name in $(ls -1 /config/tables); do
       file="/etc/postfix/$name"
       cp "/config/tables/$name" "$file"
-      var_name="$(grep -v -E '^#|^$' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
-      map="$(postconf -h $var_name)"
-      echo "postmap $map"
-      postmap "$map" || true
+      postmap_file "$file"
    done
 fi
 
@@ -91,10 +106,7 @@ env | grep ^POSTMAP_ | sed 's/^POSTMAP_//' \
    name='$'"POSTMAP_$key"
    eval value=$name
    echo "$value" > "$file"
-   var_name="$(grep -v -E '^#|^$' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
-   map="$(postconf -h $var_name)"
-   echo "postmap $map"
-   postmap "$map" || true
+   postmap_file "$file"
 done
 
 
