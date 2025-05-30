@@ -74,7 +74,7 @@ if [ -d /config/tables ]; then
    for name in $(ls -1 /config/tables); do
       file="/etc/postfix/$name"
       cp "/config/tables/$name" "$file"
-      var_name="$(grep -v '^#' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
+      var_name="$(grep -v -E '^#|^$' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
       map="$(postconf -h $var_name)"
       echo "postmap $map"
       postmap "$map" || true
@@ -91,7 +91,7 @@ env | grep ^POSTMAP_ | sed 's/^POSTMAP_//' \
    name='$'"POSTMAP_$key"
    eval value=$name
    echo "$value" > "$file"
-   var_name="$(grep -v '^#' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
+   var_name="$(grep -v -E '^#|^$' /etc/postfix/main.cf | awk -F= -v file="$file" '{if ($2 ~ file) print $1}')"
    map="$(postconf -h $var_name)"
    echo "postmap $map"
    postmap "$map" || true
