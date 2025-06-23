@@ -75,7 +75,7 @@ find_map() {
       | grep "$_file" \
       | cut -d '=' -f 2 \
       | tr ' ,' '\n' \
-      | grep "$_file"
+      | grep "$_file\$"
 }
 
 postmap_file() {
