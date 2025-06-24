@@ -71,7 +71,8 @@ done
 
 find_map() {
    _file="$1"
-   grep -v -E '^#|^$' /etc/postfix/main.cf \
+   #grep -v -E '^#|^$' /etc/postfix/main.cf \
+   postconf \
       | grep "$_file" \
       | cut -d '=' -f 2 \
       | tr ' ,' '\n' \
